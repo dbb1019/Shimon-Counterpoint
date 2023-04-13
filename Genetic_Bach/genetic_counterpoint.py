@@ -3,7 +3,7 @@ from scipy import stats
 import random
 import csv
 import os
-from music21 import pitch as pt, note as no, stream, duration as du, converter, tempo, key, converter
+from music21 import pitch as pt, note as no, stream, duration as du, converter, tempo, key, converter, meter
 
 CONST = 1e-12
 
@@ -24,7 +24,7 @@ def read_csv(filename):
         for row in reader:
             data = np.vstack((data, [float(row[2]), float(row[3])]))
             data = data.tolist()
-       
+        
     return data
 
 
@@ -275,7 +275,7 @@ def run_genetic(MAX_ITER, SURVIVAL_RATE, MUTATE_RATE, INPUT, DIR):
             MUTATE_RATE: percentage of population of mutation
             INPUT: input numpy array
             DIR: path of population folder
-        Return:
+        Return: 
             best_individual: the first element in the population list after running the max number of iteration (without the elements when dur >= 16).
     """ 
     
@@ -324,7 +324,8 @@ def write_midi(arr_list, output_dir):
         
         n = no.Note()
         n.pitch = pitch_obj
-        n.duration = du.Duration(duration/2)
+        if duration > 0.25: 
+            n.duration = du.Duration(duration/2)
         
         ks = key.Key('C')
         mstream.insert(0, ks)
@@ -363,20 +364,74 @@ def read_midi(input_dir):
     return note_dur_array
 
 
+def write_midi111(arr_list, output_dir):
+    
+    """
+    Args:
+        arr_list: list of notes [pitch, dur]
+        output_dir: output path for midi file
+    """
 
-for i in range(1,9):
+    arr = np.array(arr_list).reshape(len(arr_list),2)
 
-    input_dir = f'/Users/annie/Desktop/2023 Spring/MUSI 7100/week12/input_test/test0{i}.mid'
+    notes = [int(note[0]) for note in arr]
+    durations = [float(note[1]) for note in arr]
+
+    mstream = stream.Stream()
+
+    for i, nt in enumerate(notes):
+        duration = durations[i]
+        pitch_obj = pt.Pitch(nt)
+
+        n = no.Note()
+        n.pitch = pitch_obj
+        if n.duration > 0.25:
+            n.duration = du.Duration(duration/2)
+
+        ks = key.Key('C')
+        mstream.insert(0, ks)
+        
+        mm = tempo.MetronomeMark(number=40)
+        mstream.insert(0, mm)
+
+        mstream.append(n)
+
+    twoMeasureDuration = 8 * 4 
+
+    totalDuration = sum(durations)
+    remainingDuration = twoMeasureDuration - totalDuration
+
+    if remainingDuration < 0:
+        raise ValueError('Total duration is greater than two measures')
+
+    if remainingDuration > 0:
+        # Add rests to fill up remaining duration
+        rest = no.Rest()
+        rest.duration = du.Duration(remainingDuration/2)
+        mstream.append(rest)
+
+    quarterLengthDivisors = [4.0, 2.0, 1.0, 0.5, 0.25, 0.125, 0.0625]
+    mstream = mstream.quantize(quarterLengthDivisors)
+
+    mstream.write('midi', fp=output_dir)
+
+
+for i in range(1,6):
+
+    input_dir = f'/Users/annie/Documents/Shimon-Counterpoint/test_midi/test0{i}.mid'
     note_dur_array = read_midi(input_dir)
     input_list = note_dur_array.tolist()
     print(input_list)
 
-    pop_dir = '/Users/annie/Desktop/Genetic_Bach/midiCmaj/4_4/DATA'
-    output_dir = f'/Users/annie/Desktop/2023 Spring/MUSI 7100/week12/output/test0{i}_output.mid'
-    output_quant_dir = f'/Users/annie/Desktop/2023 Spring/MUSI 7100/week12/output_quant/test0{i}_output_quant.mid'
+    pop_dir = '/Users/annie/Documents/Shimon-Counterpoint/Genetic_Bach/midiCmaj/4_4/DATA'
+    output_dir = f'/Users/annie/Documents/Shimon-Counterpoint/midi_files/test0{i}_output.mid'
+    output_dir_i = f'/Users/annie/Documents/Shimon-Counterpoint/midi_files/test0{i}_input.mid'
+    #output_quant_dir = f'/Users/annie/Documents/Shimon-Counterpoint/Genetic_Bach/generated_midi/quant/test0{i}_output_quant.mid'
 
     best_individual = run_genetic(5, 0.25, 0.02, note_dur_array, pop_dir)
-    result = input_list + best_individual
+    result = best_individual
+
     print(result)
     
+    write_midi(input_list, output_dir_i)
     write_midi(result, output_dir)
