@@ -965,6 +965,36 @@ def read_quant_input(input_dir, output_dir):
     mstream.write('midi', fp=output_dir)
 
 
+def adjust_midi_pitch_ranges(filename):
+    # Load MIDI file
+    midi_data = converter.parse(filename)
+
+    # Define pitch ranges for each track
+    pitch_ranges = {
+        0: [84, 95],   # First track pitch range
+        1: [72, 83],   # Second track pitch range
+        2: [60, 71],   # Third track pitch range
+        3: [48, 59],   # Fourth track pitch range
+    }
+
+    # Loop over each track
+    for i, track in enumerate(midi_data.parts):
+        # Loop over each note in the track
+        for note in track.flat.notes:
+            # Check if note is within the pitch range
+            if note.pitch.midi < pitch_ranges[i][0]:
+                # Move note up by an octave until it is in the range
+                while note.pitch.midi < pitch_ranges[i][0]:
+                    note.pitch.octave += 1
+            elif note.pitch.midi > pitch_ranges[i][1]:
+                # Move note down by an octave until it is in the range
+                while note.pitch.midi > pitch_ranges[i][1]:
+                    note.pitch.octave -= 1
+
+    # Save adjusted MIDI file
+    midi_data.write("midi", filename)
+
+
 def run(address, *args):
     print("start!")
     input_dir = '/Users/annie/Documents/Shimon-Counterpoint/midi_files/input.mid'
@@ -980,10 +1010,9 @@ def run(address, *args):
     write_midi(input_list, gene_input_dir)
     best_individual = run_genetic(5, 0.25, 0.02, note_dur_array, pop_dir)
     write_midi(best_individual, gene_output_dir)
-
-    client.send_message("/playmidi", 1)
     print("finish continuation")
-
+    client.send_message("/playmidi", 1)
+    
     melody1_dir = '/Users/annie/Documents/Shimon-Counterpoint/midi_files/gene_input.mid'
     melody2_dir = '/Users/annie/Documents/Shimon-Counterpoint/midi_files/gene_output.mid' 
     filename1 = 'chorale1.mid'
@@ -991,13 +1020,19 @@ def run(address, *args):
 
     harmonize_melody(melody1_dir, filename1, model)
     harmonize_melody(melody2_dir, filename2, model)
+
+    chorale1_dir = '/Users/annie/Documents/Shimon-Counterpoint/midi_files/chorale1.mid'
+    chorale2_dir = '/Users/annie/Documents/Shimon-Counterpoint/midi_files/chorale2.mid'
+
+    adjust_midi_pitch_ranges(chorale1_dir)
+    adjust_midi_pitch_ranges(chorale2_dir)
     print("finish harmonization")
 
 
 
 if __name__ == '__main__':
 
-    model.load_state_dict(torch.load(base_dir + 'CocoNetModel.pt', map_location=torch.device('cpu')))
+    model.load_state_dict(torch.load(base_dir + 'CocoNetModel.pt', map_location=torch.device('mps')))
     
     dispatcher = Dispatcher()
     dispatcher.map("/runGenetic", run)
