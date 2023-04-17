@@ -5,7 +5,6 @@ import csv
 import os
 from music21 import pitch as pt, note as no, stream, duration as du, converter, tempo, key, converter, meter
 import argparse
-import threading
 from pythonosc import udp_client
 from pythonosc.dispatcher import Dispatcher
 from pythonosc import osc_server
@@ -15,9 +14,11 @@ import numpy as np
 import mido
 import matplotlib.pyplot as plt
 
+
 CONST = 1e-12
 
 parser = argparse.ArgumentParser()
+
 parser.add_argument("--ip", default="127.0.0.1",
     help="The ip of the OSC server")
 parser.add_argument("--portClient", type=int, default=5008,
@@ -28,6 +29,7 @@ args = parser.parse_args()
 
 client = udp_client.SimpleUDPClient(args.ip, args.portClient)
 
+
 has_gpu = torch.cuda.is_available()
 has_mps = getattr(torch,'has_mps',False)
 device = "mps" if getattr(torch,'has_mps',False) \
@@ -35,8 +37,10 @@ device = "mps" if getattr(torch,'has_mps',False) \
 
 print(device)
 
+
 base_dir = '/Users/annie/Documents/Shimon-Counterpoint/cocotorch/'
 base = '/Users/annie/Documents/Shimon-Counterpoint/'
+
 
 # load training data
 data = np.load(base_dir + 'Jsb16thSeparated.npz', encoding='bytes', allow_pickle=True)
@@ -126,8 +130,6 @@ def piano_roll_to_midi(piece, track0_path=None):
 
 
 
-
-
 class Chorale:
     """
     A class to store and manipulate an array self.arr that stores a chorale.
@@ -166,6 +168,7 @@ class Chorale:
         fig.set_figwidth(15)
         return fig, axs
     
+
     def save(self, filename, track0_path):
         # display an in-notebook widget for playing audio
         # saves the midi file as a file named name in base_dir/midi_files
@@ -176,6 +179,7 @@ class Chorale:
         midi.save(base + 'midi_files/' + filename)
         #play_midi('midi_files/' + filename)
         
+
     def elaborate_on_voices(self, voices, model):
         # voice is a set consisting of 0, 1, 2, or 3
         # create a mask consisting of the given voices
@@ -186,6 +190,7 @@ class Chorale:
             mask[i] = 1
             y[i] = self.arr[i].copy()
         return harmonize(y, mask, model)
+
 
     def score(self):
         consonance_dict = {0: 1, 1: 0, 2: 0, 3: 1, 4: 1, 5: 1, 6: 0, 7: 1, 8: 1, 9: 1, 10: 0, 11: 0}
@@ -202,8 +207,7 @@ class Chorale:
                     note_score += 1
         return consonance_score, note_score
         
-        
-        
+            
         
 # harmonize a melody
 def harmonize(y, C, model):
@@ -232,6 +236,7 @@ def harmonize(y, C, model):
             C2 = C.copy()
         return x
     
+
 def generate_random_chorale(model):
     """
     Calls harmonize with random initialization and C=0, and so generates a new sample that sounds like Bach.
@@ -241,7 +246,9 @@ def generate_random_chorale(model):
     return harmonize(y, C, model)
 
 
+
 hidden_size = 32
+
 
 class Unit(nn.Module):
     """
@@ -297,6 +304,7 @@ class Net(nn.Module):
         self.unit16 = Unit()
         self.affine = nn.Linear(hidden_size*T*P, I*T*P)
         
+
     def forward(self, x, C):
         # x is a tensor of shape (N, I, T, P)
         # C is a tensor of 0s and 1s of shape (N, I, T)
@@ -342,6 +350,7 @@ class Net(nn.Module):
                 
         return y
     
+
     def pred(self, y, C):
         # y is an array of shape (I, T) with integer entries in [0, P)
         # C is an array of shape (I, T) consisting of 0s and 1s
@@ -368,13 +377,16 @@ class Net(nn.Module):
             u = np.random.rand(I, T) # shape (I, T)
             return np.argmax(cum_probs > u, axis=0)     
 
+
 model = Net().to(device)
+
 
 def check_list(lst):
     for i in range(len(lst)):
         if lst[i] > 88 or lst[i] < 30:
             lst[i] = lst[i-1]
     return lst
+
 
 def format_melody(melody):
     
@@ -384,7 +396,9 @@ def format_melody(melody):
         melody = melody + [0] * (32 - len(melody))  # Pad the list with zeros if it's too short
 
     check_list(melody)
+
     return melody
+
 
 def read_midi_co(input_dir):
     
@@ -437,6 +451,7 @@ def read_midi_co(input_dir):
     
     return melody
 
+
 def get_avg_pitch(melody = []):
     
     if len(melody) == 0:
@@ -444,10 +459,11 @@ def get_avg_pitch(melody = []):
     else:
         return round(sum(melody) / len(melody))
     
+
 def harmonize_soprano(melody_dir, filename, model):
     
     melody = read_midi_co(melody_dir)
-    print(melody)
+    #print(melody)
     y = np.random.randint(P, size=(I, T))
     y[0] = np.array(melody)-30
     D0 = np.ones((1, T)).astype(int)
@@ -459,10 +475,11 @@ def harmonize_soprano(melody_dir, filename, model):
     #plt.show()
     chorale.save(filename, melody_dir)
 
+
 def harmonize_alto(melody_dir, filename, model):
     
     melody = read_midi_co(melody_dir)
-    print(melody)
+    #print(melody)
     y = np.random.randint(P, size=(I, T))
     y[1] = np.array(melody)-30
     D0 = np.zeros((1, T)).astype(int)
@@ -476,10 +493,11 @@ def harmonize_alto(melody_dir, filename, model):
     #plt.show()
     chorale.save(filename, melody_dir)
 
+
 def harmonize_tenor(melody_dir, filename, model):
     
     melody = read_midi_co(melody_dir)
-    print(melody)
+    #print(melody)
     y = np.random.randint(P, size=(I, T))
     y[2] = np.array(melody)-30
     D0 = np.zeros((2, T)).astype(int)
@@ -493,10 +511,11 @@ def harmonize_tenor(melody_dir, filename, model):
     #plt.show()
     chorale.save(filename, melody_dir)
 
+
 def harmonize_bass(melody_dir, filename, model):
     
     melody = read_midi_co(melody_dir)
-    print(melody)
+    #print(melody)
     y = np.random.randint(P, size=(I, T))
     y[3] = np.array(melody)-30
     D0 = np.zeros((3, T)).astype(int)
@@ -508,11 +527,12 @@ def harmonize_bass(melody_dir, filename, model):
     #plt.show()
     chorale.save(filename, melody_dir)
 
+
 def harmonize_melody(melody_dir, filename, model):
     
     melody = read_midi_co(melody_dir)
     avg_pitch = get_avg_pitch(melody)
-    print(avg_pitch)
+    #print(avg_pitch)
 
     if avg_pitch >= 30 and avg_pitch <= 47:
         harmonize_bass(melody_dir, filename, model)
@@ -805,17 +825,7 @@ def run_genetic(MAX_ITER, SURVIVAL_RATE, MUTATE_RATE, INPUT, DIR):
         #print(len(pop))
 
     best_individual = check_total_dur(pop[0])
-    '''best_individual_2 = check_total_dur(pop[1])
-    best_individual_3 = check_total_dur(pop[2])
-
-    # Keep selecting new individuals until we have three distinct ones
-    while best_individual_2 == best_individual_1 or best_individual_2 == best_individual_3:
-        best_individual_2 = check_total_dur(np.random.choice(pop))
-
-    while best_individual_3 == best_individual_1 or best_individual_3 == best_individual_2:
-        best_individual_3 = check_total_dur(np.random.choice(pop))
-        
-    return best_individual_1, best_individual_2, best_individual_3'''
+    
     return best_individual
 
 
@@ -956,7 +966,7 @@ def read_quant_input(input_dir, output_dir):
 
 
 def run(address, *args):
-    print("start genetic")
+    print("start!")
     input_dir = '/Users/annie/Documents/Shimon-Counterpoint/midi_files/input.mid'
     output_dir = '/Users/annie/Documents/Shimon-Counterpoint/midi_files/output.mid'
     read_quant_input(input_dir, output_dir)
@@ -972,7 +982,7 @@ def run(address, *args):
     write_midi(best_individual, gene_output_dir)
 
     client.send_message("/playmidi", 1)
-    print("hellomax")
+    print("finish continuation")
 
     melody1_dir = '/Users/annie/Documents/Shimon-Counterpoint/midi_files/gene_input.mid'
     melody2_dir = '/Users/annie/Documents/Shimon-Counterpoint/midi_files/gene_output.mid' 
@@ -981,11 +991,7 @@ def run(address, *args):
 
     harmonize_melody(melody1_dir, filename1, model)
     harmonize_melody(melody2_dir, filename2, model)
-    print("finish")
-
-
-def runServer(server):
-    server.serve_forever()
+    print("finish harmonization")
 
 
 
@@ -1001,5 +1007,3 @@ if __name__ == '__main__':
     print("Serving on {}".format(server.server_address))
 
     server.serve_forever()
-    #t = threading.Thread(target=server.serve_forever, args=[1], daemon=True)
-    #t.start()
