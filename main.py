@@ -559,7 +559,7 @@ def read_csv(filename):
         data = np.zeros((0,2))
         
         for row in reader:
-            data = np.vstack((data, [float(row[2]), float(row[3])]))
+            data = np.vstack((data, [float(row[2]), float(row[3])]))            
             data = data.tolist()
         
     return data
@@ -601,6 +601,11 @@ def get_population(dir):
     population = []
     for file in files:
         data = read_csv(file)
+        #for i in range(-5, 7):  
+            #new_data = data.copy()  
+            #for j in range(len(new_data)):
+                #new_data[j][0] += i
+            #population.append(new_data)  
         population.append(data)
     
     return population
@@ -862,7 +867,7 @@ def write_midi(arr_list, output_dir):
 
         total_dur += n.duration.quarterLength
         
-        if total_dur >= 7.5:
+        if total_dur > 7.5:
             break      
     
     quarterLengthDivisors = [4.0, 2.0, 1.0, 0.5, 0.25, 0.125, 0.0625]
