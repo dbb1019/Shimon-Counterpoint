@@ -971,6 +971,7 @@ def read_quant_input(input_dir, output_dir):
 
 
 def adjust_midi_pitch_ranges(filename):
+    
     # Load MIDI file
     midi_data = converter.parse(filename)
 
@@ -1001,6 +1002,7 @@ def adjust_midi_pitch_ranges(filename):
 
 
 def run(address, *args):
+    
     print("start!")
     input_dir = '/Users/annie/Documents/Shimon-Counterpoint/midi_files/input.mid'
     output_dir = '/Users/annie/Documents/Shimon-Counterpoint/midi_files/output.mid'
