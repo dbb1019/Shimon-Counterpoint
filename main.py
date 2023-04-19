@@ -3,7 +3,7 @@ from scipy import stats
 import random
 import csv
 import os
-from music21 import pitch as pt, note as no, stream, duration as du, converter, tempo, key, converter, meter
+from music21 import pitch as pt, note as no, stream, chord as ch, duration as du, converter, tempo, key, converter
 import argparse
 from pythonosc import udp_client
 from pythonosc.dispatcher import Dispatcher
@@ -69,12 +69,14 @@ batch_size=24
 # of an integer between 0 and 127 inclusive
 
 def piano_roll_to_midi(piece, track0_path=None):
+    
     """
     piece is a an array of shape (T, 4) for some T.
     The (i,j)th entry of the array is the midi pitch of the jth voice at time i. It's an integer in range(128).
     track0_path is an optional path to a MIDI file that will be loaded as the first track of the output MIDI file.
     outputs a mido object mid that you can convert to a midi file by called its .save() method
     """
+    
     piece = np.concatenate([piece, [[np.nan, np.nan, np.nan, np.nan]]], axis=0)
 
     bpm = 40
@@ -131,9 +133,11 @@ def piano_roll_to_midi(piece, track0_path=None):
 
 
 class Chorale:
+   
     """
     A class to store and manipulate an array self.arr that stores a chorale.
     """
+
     def __init__(self, arr, subtract_30=False):
         # arr is an array of shape (4, 32) with values in range(0, 57)
         self.arr = arr.copy()
@@ -211,12 +215,14 @@ class Chorale:
         
 # harmonize a melody
 def harmonize(y, C, model):
+    
     """
     Generate an artificial Bach Chorale starting with y, and keeping the pitches where C==1.
     Here C is an array of shape (4, 32) whose entries are 0 and 1.
     The pitches outside of C are repeatedly resampled to generate new values.
     For example, to harmonize the soprano line, let y be random except y[0] contains the soprano line, let C[1:] be 0 and C[0] be 1.
     """
+    
     model.eval()
     with torch.no_grad():
         x = y
@@ -238,9 +244,11 @@ def harmonize(y, C, model):
     
 
 def generate_random_chorale(model):
+    
     """
     Calls harmonize with random initialization and C=0, and so generates a new sample that sounds like Bach.
     """
+
     y = np.random.randint(P, size=(I, T)).astype(int)
     C = np.zeros((I, T)).astype(int)
     return harmonize(y, C, model)
@@ -251,9 +259,11 @@ hidden_size = 32
 
 
 class Unit(nn.Module):
+   
     """
     Two convolution layers each followed by batchnorm and relu, plus a residual connection.
     """
+    
     def __init__(self):
         super(Unit, self).__init__()
         self.conv1 = nn.Conv2d(hidden_size, hidden_size, 3, padding=1)
@@ -277,10 +287,12 @@ class Unit(nn.Module):
     
 
 class Net(nn.Module):
+    
     """
     A CNN that where you input a starter chorale and a mask and it outputs a prediction for the values
     in the starter chorale away from the mask that are most like the training data.
     """
+    
     def __init__(self):
         super(Net, self).__init__()
         self.initial_conv = nn.Conv2d(2*I, hidden_size, 3, padding=1)
@@ -352,6 +364,7 @@ class Net(nn.Module):
     
 
     def pred(self, y, C):
+
         # y is an array of shape (I, T) with integer entries in [0, P)
         # C is an array of shape (I, T) consisting of 0s and 1s
         # the entries of y away from the support of C should be considered 'unknown'
@@ -536,11 +549,11 @@ def harmonize_melody(melody_dir, filename, model):
 
     if avg_pitch >= 30 and avg_pitch <= 47:
         harmonize_bass(melody_dir, filename, model)
-    elif avg_pitch >= 48 and avg_pitch <= 61:
+    elif avg_pitch >= 48 and avg_pitch <= 59:
         harmonize_tenor(melody_dir, filename, model)
-    elif avg_pitch >= 61 and avg_pitch <= 65:
+    elif avg_pitch >= 60 and avg_pitch <= 67:
         harmonize_alto(melody_dir, filename, model)
-    elif avg_pitch >= 66 and avg_pitch <= 86:
+    elif avg_pitch >= 68 and avg_pitch <= 86:
         harmonize_soprano(melody_dir, filename, model)  
 
 
@@ -738,7 +751,9 @@ def crossover(population):
         parent1 = population[random.randint(0,2)]
         parent2 = random.choice([p for p in population if p != parent1])
         
-        crossover_point = random.randint(round(min(len(parent1), len(parent2))/4), min(len(parent1), len(parent2)))
+        crossover_point = random.randint(
+            round(min(len(parent1), len(parent2))/4), min(len(parent1), len(parent2))
+            )
         offspring1 = parent1[:crossover_point] + parent2[crossover_point:]
         offspring2 = parent2[:crossover_point] + parent1[crossover_point:]
 
@@ -771,11 +786,13 @@ def mutate(population, probability):
 
             # randomly select one or two elements to mutate
             idx = random.randint(0, len(population[i])-1)
+            
             # change the element to a random value
             population[i][idx] = [(population[i][idx][0] + random.choices(pitch_values, weights=pitch_weights, k=1)[0]), 
                                   random.choices(dur_values, weights=dur_weights, k=1)[0]]
             
             if random.random() < 0.5:
+                
                 idx2 = random.randint(0, len(population[i])-1)
                 # change the second element to a random value
                 population[i][idx2] = [(population[i][idx2][0] + random.choices(pitch_values, weights=pitch_weights, k=1)[0]), 
@@ -911,18 +928,29 @@ def read_quant_input(input_dir, output_dir):
     """ 
     
     midi_stream = converter.parse(input_dir)
-
     note_dur_array = []
 
-    for note in midi_stream.flat.notes:
+    for element in midi_stream.flat.elements:
         
-        pitch = note.pitch.midi
-        dur = note.duration.quarterLength
-        
-        if len(note_dur_array) > 0 and note_dur_array[-1][0] == pitch:
-            note_dur_array[-1][1] += dur
-        else:
-            note_dur_array.append([pitch, dur])
+        if isinstance(element, no.Note):
+            pitch = element.pitch.midi
+            dur = element.duration.quarterLength
+
+            if len(note_dur_array) > 0 and note_dur_array[-1][0] == pitch:
+                note_dur_array[-1][1] += dur
+            else:
+                note_dur_array.append([pitch, dur])
+
+        elif isinstance(element, ch.Chord):
+            # Randomly choose one of the pitches from the chord
+            chosen_note = random.choice(element.notes)
+            pitch = chosen_note.pitch.midi
+            dur = element.duration.quarterLength
+
+            if len(note_dur_array) > 0 and note_dur_array[-1][0] == pitch:
+                note_dur_array[-1][1] += dur
+            else:
+                note_dur_array.append([pitch, dur])
 
     note_dur_array = np.array(note_dur_array)
     
@@ -1018,6 +1046,7 @@ def run(address, *args):
     best_individual = run_genetic(5, 0.25, 0.02, note_dur_array, pop_dir)
     write_midi(best_individual, gene_output_dir)
     print("finish continuation")
+    
     client.send_message("/playmidi", 1)
     
     melody1_dir = '/Users/annie/Documents/Shimon-Counterpoint/midi_files/gene_input.mid'
@@ -1046,6 +1075,7 @@ if __name__ == '__main__':
     
     server = osc_server.ThreadingOSCUDPServer(
         (args.ip, args.portServer), dispatcher)
+    
     print("Serving on {}".format(server.server_address))
 
     server.serve_forever()
