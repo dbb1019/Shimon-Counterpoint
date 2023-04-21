@@ -907,33 +907,11 @@ def read_midi(input_dir):
 
     note_dur_array = []
 
-    '''for note in midi_stream.flat.notes:
+    for note in midi_stream.flat.notes:
         
         pitch = note.pitch.midi
         dur = note.duration.quarterLength
-        note_dur_array.append([pitch, dur])'''
-    
-    for element in midi_stream.flat.elements:
-        
-        if isinstance(element, no.Note):
-            pitch = element.pitch.midi
-            dur = element.duration.quarterLength
-
-            if len(note_dur_array) > 0 and note_dur_array[-1][0] == pitch:
-                note_dur_array[-1][1] += dur
-            else:
-                note_dur_array.append([pitch, dur])
-
-        elif isinstance(element, ch.Chord):
-            # Randomly choose one of the pitches from the chord
-            chosen_note = random.choice(element.notes)
-            pitch = chosen_note.pitch.midi
-            dur = element.duration.quarterLength
-
-            if len(note_dur_array) > 0 and note_dur_array[-1][0] == pitch:
-                note_dur_array[-1][1] += dur
-            else:
-                note_dur_array.append([pitch, dur])
+        note_dur_array.append([pitch, dur])
 
     note_dur_array = np.array(note_dur_array)
 
