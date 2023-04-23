@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 737.0, 141.0, 765.0, 528.0 ],
+		"rect" : [ 313.0, 117.0, 1047.0, 624.0 ],
 		"bglocked" : 1,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -57,7 +57,7 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 320.0, 888.0, 50.0, 22.0 ],
-					"text" : "76 85"
+					"text" : "81 80"
 				}
 
 			}
@@ -448,7 +448,7 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 608.5, 1138.0, 50.0, 22.0 ],
-					"text" : "76"
+					"text" : "81"
 				}
 
 			}
@@ -29300,7 +29300,7 @@
 					"fontname" : "Arial",
 					"fontsize" : 9.0,
 					"id" : "obj-74",
-					"items" : [ "IAC Driver Bus 1", ",", "IAC Driver Bus 2", ",", "microKEY-25 KEYBOARD", ",", "to Max 1", ",", "to Max 2" ],
+					"items" : [ "IAC Driver Bus 1", ",", "IAC Driver Bus 2", ",", "to Max 1", ",", "to Max 2", ",", "microKEY-25 KEYBOARD" ],
 					"labelclick" : 1,
 					"maxclass" : "umenu",
 					"numinlets" : 1,
@@ -29395,7 +29395,7 @@
 					"fontname" : "Arial",
 					"fontsize" : 9.0,
 					"id" : "obj-80",
-					"items" : [ "AU DLS Synth 1", ",", "IAC Driver Bus 1", ",", "IAC Driver Bus 2", ",", "microKEY-25 CTRL", ",", "from Max 1", ",", "from Max 2" ],
+					"items" : [ "AU DLS Synth 1", ",", "IAC Driver Bus 1", ",", "IAC Driver Bus 2", ",", "from Max 1", ",", "from Max 2", ",", "microKEY-25 CTRL" ],
 					"labelclick" : 1,
 					"maxclass" : "umenu",
 					"numinlets" : 1,
@@ -29560,7 +29560,7 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
 									"patching_rect" : [ 635.0, 521.0, 155.0, 49.0 ],
-									"text" : ":040504030000F0"
+									"text" : ":03060D001010\r\n"
 								}
 
 							}
@@ -31216,7 +31216,7 @@
 													"numoutlets" : 1,
 													"outlettype" : [ "" ],
 													"patching_rect" : [ 67.0, 288.0, 535.0, 19.0 ],
-													"text" : "04h 05h 04h 03h 00h 00h F0h"
+													"text" : "03h 06h 0Dh 00h 10h 10h"
 												}
 
 											}
@@ -31867,7 +31867,7 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
 									"patching_rect" : [ 522.0, 438.0, 279.0, 40.0 ],
-									"text" : ":040504030000F0"
+									"text" : ":03060D001010\r\n"
 								}
 
 							}
@@ -33941,7 +33941,7 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
 									"patching_rect" : [ 487.5, 330.0, 296.0, 19.0 ],
-									"text" : "58 48 52 48 53 48 52 48 51 48 48 48 48 70 48 13 10"
+									"text" : "58 48 51 48 54 48 68 48 48 49 48 49 48 13 10"
 								}
 
 							}

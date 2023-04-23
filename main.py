@@ -51,6 +51,7 @@ for x in data.files:
             all_tracks.append(y + i)
 max_midi_pitch = -np.inf
 min_midi_pitch = np.inf
+
 for x in all_tracks:
     if x.max() > max_midi_pitch:
         max_midi_pitch = int(x.max())
@@ -110,6 +111,7 @@ def piano_roll_to_midi(piece, track0_path=None):
     for i in range(len(piece)):
         pitches = {'soprano': piece[i, 0], 'alto': piece[i, 1],
                    'tenor': piece[i, 2], 'bass': piece[i, 3]}
+        
         for voice in tracks:
             if np.isnan(past_pitches[voice]):
                 past_pitches[voice] = None
@@ -139,6 +141,7 @@ class Chorale:
     """
 
     def __init__(self, arr, subtract_30=False):
+        
         # arr is an array of shape (4, 32) with values in range(0, 57)
         self.arr = arr.copy()
         if subtract_30:
@@ -153,6 +156,7 @@ class Chorale:
         
 
     def to_image(self):
+
         # visualize the four tracks as a images
         soprano = self.one_hot[0].transpose()
         alto = self.one_hot[1].transpose()
@@ -170,10 +174,12 @@ class Chorale:
         axs[3].set_title('bass')
         fig.set_figheight(5)
         fig.set_figwidth(15)
+
         return fig, axs
     
 
     def save(self, filename, track0_path):
+
         # display an in-notebook widget for playing audio
         # saves the midi file as a file named name in base_dir/midi_files
         
@@ -185,18 +191,23 @@ class Chorale:
         
 
     def elaborate_on_voices(self, voices, model):
+
         # voice is a set consisting of 0, 1, 2, or 3
         # create a mask consisting of the given voices
         # generate a chorale with the same voices as in voices
+
         mask = np.zeros((I, T))
         y = np.random.randint(P, size=(I, T))
+
         for i in voices:
             mask[i] = 1
             y[i] = self.arr[i].copy()
+
         return harmonize(y, mask, model)
 
 
     def score(self):
+
         consonance_dict = {0: 1, 1: 0, 2: 0, 3: 1, 4: 1, 5: 1, 6: 0, 7: 1, 8: 1, 9: 1, 10: 0, 11: 0}
         consonance_score = 0
         for k in range(32):
@@ -209,6 +220,7 @@ class Chorale:
             for j in range(1, 32):
                 if self.arr[i, j] != self.arr[i, j-1]:
                     note_score += 1
+
         return consonance_score, note_score
         
             
@@ -224,6 +236,7 @@ def harmonize(y, C, model):
     """
     
     model.eval()
+
     with torch.no_grad():
         x = y
         C2 = C.copy()
@@ -240,6 +253,7 @@ def harmonize(y, C, model):
             x = model.pred(x, C2)
             x[C2==1] = x_cache[C2==1]
             C2 = C.copy()
+        
         return x
     
 
@@ -251,6 +265,7 @@ def generate_random_chorale(model):
 
     y = np.random.randint(P, size=(I, T)).astype(int)
     C = np.zeros((I, T)).astype(int)
+    
     return harmonize(y, C, model)
 
 
@@ -395,9 +410,10 @@ model = Net().to(device)
 
 
 def check_list(lst):
+    
     for i in range(len(lst)):
         if lst[i] > 88 or lst[i] < 30:
-            lst[i] = lst[i-1]
+            lst[i] = lst[i-1]    
     return lst
 
 
@@ -980,9 +996,12 @@ def read_quant_input(input_dir, output_dir):
     scale_factor = 16 / current_sum
     note_dur_array[:, 1] *= scale_factor
     durs = note_dur_array[:, 1]
+    
     note_dur_array[:, 1] = np.select(
+
         [durs< 0.15, durs < 0.375, durs < 0.875, durs < 1.25, durs < 1.75, durs < 2.5, durs < 3.5, True],
         [0, 0.25, 0.5, 1, 1.5, 2, 3, 4]
+
     )
 
     note_dur_array = check_total_dur(note_dur_array)
@@ -1027,10 +1046,12 @@ def adjust_midi_pitch_ranges(filename):
 
     # Define pitch ranges for each track
     pitch_ranges = {
+        
         0: [84, 95],   # First track pitch range
         1: [72, 83],   # Second track pitch range
         2: [60, 71],   # Third track pitch range
         3: [48, 59],   # Fourth track pitch range
+        
     }
 
     # Loop over each track
