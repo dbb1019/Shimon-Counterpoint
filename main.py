@@ -817,7 +817,7 @@ def mutate(population, probability):
     return population
 
 
-def check_total_dur(output):
+#def check_total_dur(output):
 
     """
         Arg: 
@@ -839,6 +839,80 @@ def check_total_dur(output):
     selected_output = best[:len(selected_indices), :].tolist()
 
     return selected_output 
+
+
+def check_total_dur(output):
+
+    """
+        Arg: 
+            output: list of melody sequence
+        Return:
+            selected_output: list of melody sequence that total duration <= 16
+    """ 
+
+    def rhythm_pattern_fits(durations, pattern):
+        if len(durations) != len(pattern):
+            return False
+        return all(dur == pat for dur, pat in zip(durations, pattern))
+
+    def split_into_beats(durations, beat_duration=1):
+        beats = []
+        current_beat = []
+        current_duration = 0
+
+        for dur in durations:
+            if current_duration + dur > beat_duration:
+                if current_duration < beat_duration:
+                    beats.append(current_beat)
+                beats.append([dur])
+                current_duration = 0
+            else:
+                current_duration += dur
+                current_beat.append(dur)
+                if current_duration == beat_duration:
+                    beats.append(current_beat)
+                    current_beat = []
+                    current_duration = 0
+
+        return beats
+
+    best = np.array(output).reshape(len(output),2)
+    sum_dur = 0
+    selected_indices = []
+
+    for i, value in enumerate(best[:, 1]):
+        if sum_dur + value > 16:
+            break
+        sum_dur += value
+        selected_indices.append(i)
+
+    selected_output = best[:len(selected_indices), :]
+
+    # Check if the rhythm fits the desired patterns within each beat
+    patterns = [
+        [0.25, 0.25, 0.25, 0.25],  # 4 16th notes
+        [0.5, 0.5],               # 2 8th notes
+        [0.5, 0.25, 0.25],        # 1 8th note, 2 16th notes
+        [0.25, 0.25, 0.5],        # 2 16th notes, 1 8th note
+        [1],                      # 1 quarter note
+        [2],                      # 1 half note
+        [4],                      # 1 whole note
+    ]
+
+    beats = split_into_beats(selected_output[:, 1])
+
+    rhythm_fits = all(any(rhythm_pattern_fits(beat, pattern) for pattern in patterns) for beat in beats)
+
+    # If the rhythm doesn't fit, repeat the previous note
+    repeat_count = 0
+    max_repeat_count = 10
+    while not rhythm_fits and len(selected_output) > 1 and repeat_count < max_repeat_count:
+        selected_output[-1] = selected_output[-2]
+        beats = split_into_beats(selected_output[:, 1])
+        rhythm_fits = all(any(rhythm_pattern_fits(beat, pattern) for pattern in patterns) for beat in beats)
+        repeat_count += 1
+
+    return selected_output.tolist()
 
 
 def run_genetic(MAX_ITER, SURVIVAL_RATE, MUTATE_RATE, INPUT, DIR):
@@ -863,6 +937,7 @@ def run_genetic(MAX_ITER, SURVIVAL_RATE, MUTATE_RATE, INPUT, DIR):
         #print(len(pop))
 
     best_individual = check_total_dur(pop[0])
+    print(best_individual)
     
     return best_individual
 
@@ -877,6 +952,8 @@ def write_midi(arr_list, output_dir):
     total_dur = 0
 
     arr = np.array(arr_list).reshape(len(arr_list),2)
+
+    arr = check_total_dur(arr)
     
     notes = [int(note[0]) for note in arr]
     durations = [float(note[1]) for note in arr]
@@ -1086,11 +1163,12 @@ def run(address, *args):
     gene_output_dir = '/Users/annie/Documents/Shimon-Counterpoint/midi_files/gene_output.mid'
 
     write_midi(input_list, gene_input_dir)
-    best_individual = run_genetic(5, 0.25, 0.02, note_dur_array, pop_dir)
+    client.send_message("/playmelody", 1)
+    best_individual = run_genetic(5, 0.4, 0.02, note_dur_array, pop_dir)
     write_midi(best_individual, gene_output_dir)
     print("finish continuation")
     
-    client.send_message("/playmidi", 1)
+    client.send_message("/playgene", 1)
     
     melody1_dir = '/Users/annie/Documents/Shimon-Counterpoint/midi_files/gene_input.mid'
     melody2_dir = '/Users/annie/Documents/Shimon-Counterpoint/midi_files/gene_output.mid' 
@@ -1114,7 +1192,7 @@ if __name__ == '__main__':
     model.load_state_dict(torch.load(base_dir + 'CocoNetModel.pt', map_location=torch.device('mps')))
     
     dispatcher = Dispatcher()
-    dispatcher.map("/runGenetic", run)
+    dispatcher.map("/run", run)
     
     server = osc_server.ThreadingOSCUDPServer(
         (args.ip, args.portServer), dispatcher)
